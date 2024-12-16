@@ -75,30 +75,27 @@ const DownloadTalons: FC<DownloadTalonsProps> = (props) => {
     const progressValue = calculateProgress(progress);
 
     useEffect(() => {
-        console.log('listen download start');
         window.electronAPI.onDownloadTalonsStart(() => {
             setIsDownloading(true);
         });
     }, []);
 
     useEffect(() => {
-        console.log('listen download progress');
         window.electronAPI.onDownloadTalonProgress((downloadInfo: DownloadProgressInfo<TalonSchema>) => {
             setProgress(downloadInfo);
         });
     }, []);
 
     useEffect(() => {
-        console.log('listen download error');
         window.electronAPI.onDownloadTalonError((error: Error) => {
             setError(error);
         });
     }, []);
 
     useEffect(() => {
-        console.log('listen download complete');
         window.electronAPI.onDownloadTalonComplete(() => {
             setIsDownloading(false);
+            setProgress(undefined);
         });
     }, []);
 
