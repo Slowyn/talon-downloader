@@ -45,16 +45,24 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@radix-ui/react-compose-refs": "^1.1.1",
+    "@radix-ui/react-slot": "^1.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "electron-squirrel-startup": "^1.0.1",
     "lucide-react": "^0.468.0",
+    "node-fetch": "^3.3.2",
+    "puppeteer": "^23.10.4",
+    "puppeteer-core": "^23.10.4",
+    "puppeteer-in-electron": "^3.0.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "rxjs": "^7.8.1",
     "scheduler": "^0.25.0",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^3.24.1"
   },
   "packageManager": "pnpm@9.7.1+sha512.faf344af2d6ca65c4c5c8c2224ea77a81a5e8859cbc4e06b1511ddce2f0151512431dd19e6aff31f2c6a8f5f2aced9bd2273e1fed7dd4de1868984059d2c4247"
 }
