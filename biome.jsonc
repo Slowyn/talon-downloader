@@ -1,0 +1,381 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 4,
+    "lineEnding": "lf",
+    "lineWidth": 120,
+    "attributePosition": "auto"
+  },
+  "files": {
+    "maxSize": 152428800,
+    "ignore": [
+      "**/*.css",
+      "**/__reports/**",
+      "**/playwright-report/**",
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/dist-server/**",
+      "**/build/**",
+      "**/generated/**",
+      "**/storybook-static/**",
+      // Сгенерированный клиент призмы
+      "**/db-client/**",
+      // Сгенерированные файлы GQL
+      "**/types.ts",
+      "**/types/graphql.ts",
+      "**/gql/graphql.ts",
+      "**/gql/gql.ts",
+      "**/*.graphql-types.d.ts",
+      "**/graphql/schema.ts",
+      "**/graphql-types.ts",
+      "**/*.generated.graphql",
+      // Сгенерированные локализации из танкера
+      "**/*.i18n/**",
+      "**/api/**/*Types.d.ts",
+      // артефакты тестов
+      "**/test-results/**",
+      "**/test-artifacts/**",
+      // окружение
+      "**/.env-cmdrc.js"
+    ]
+  },
+  "organizeImports": { "enabled": true, "ignore": ["*.d.ts"] },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "defaultBranch": "trunk",
+    "useIgnoreFile": true
+  },
+  "json": {
+    "formatter": {
+      "indentWidth": 2
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": false,
+      "a11y": {},
+      "complexity": {
+        "noMultipleSpacesInRegularExpressionLiterals": "error",
+        "noUselessEmptyExport": "error",
+        "noUselessLabel": "error",
+        "noUselessLoneBlockStatements": "error",
+        "noUselessRename": "error",
+        "noUselessThisAlias": "error",
+        "noUselessTypeConstraint": "error",
+        "useFlatMap": "error",
+        "useSimpleNumberKeys": "error",
+        "useRegexLiterals": "error",
+        "noExtraBooleanCast": "error",
+        "noUselessTernary": "error",
+        "useLiteralKeys": "error"
+      },
+      "correctness": {
+        "noInvalidUseBeforeDeclaration": "error",
+        "noUndeclaredVariables": "error",
+        "noConstantCondition": "error",
+        "noUnreachable": "error",
+        // https://github.com/biomejs/biome/issues/4554 still not working
+        "noUnusedVariables": "off",
+        "noUnusedImports": "error",
+        "noUnusedFunctionParameters": "off",
+        "noVoidElementsWithChildren": "error",
+        "noFlatMapIdentity": "error",
+        "noUnusedLabels": "error",
+        "useExhaustiveDependencies": "error",
+        "useHookAtTopLevel": "error",
+        "useIsNan": "error",
+        "useJsxKeyInIterable": "error"
+      },
+      "style": {
+        "noYodaExpression": "error",
+        "noCommaOperator": "error",
+        "noNonNullAssertion": "error",
+        "noRestrictedGlobals": {
+          "level": "error",
+          "options": { "deniedGlobals": ["fdescribe", "fit"] }
+        },
+        "noVar": "error",
+        "noUselessElse": "error",
+        "noImplicitBoolean": "off",
+        "noNamespaceImport": "off",
+        "useBlockStatements": "error",
+        "useCollapsedElseIf": "error",
+        "useSelfClosingElements": "error",
+        "useSingleVarDeclarator": "error",
+        "useNodejsImportProtocol": "error",
+        // Внутри много сложных конструкций, что бы разрешить популярные конструкции. Значительно замедляет линтинг.
+        // Следить, если в будущем будет упрощено.
+        // Проблемные имена: __typename, __meta__, __esModule, начинающиеся на $ (например $shell)
+        "useNamingConvention": {
+          "level": "error",
+          "options": {
+            "strictCase": false,
+            "requireAscii": true,
+            "conventions": [
+              {
+                "selector": {
+                  "kind": "namespace"
+                },
+                "formats": ["PascalCase", "camelCase", "CONSTANT_CASE", "snake_case"]
+              },
+              {
+                "selector": {
+                  "kind": "indexParameter"
+                },
+                "formats": ["PascalCase", "camelCase"]
+              },
+              {
+                "selector": {
+                  "kind": "functionParameter"
+                },
+                "match": "[$_]{0,2}(.*)"
+              },
+              {
+                "selector": {
+                  "kind": "functionParameter"
+                },
+                "formats": ["PascalCase", "camelCase"]
+              },
+              {
+                "selector": {
+                  "kind": "enum"
+                },
+                "formats": ["PascalCase", "camelCase", "CONSTANT_CASE"]
+              },
+              {
+                "selector": {
+                  "kind": "objectLiteralMethod"
+                },
+                "match": "[$_]{0,2}(.*)"
+              },
+              {
+                "selector": {
+                  "kind": "objectLiteralMethod"
+                },
+                "formats": ["PascalCase", "camelCase"]
+              },
+              {
+                "selector": {
+                  "kind": "typeProperty"
+                },
+                "match": "[$_]{0,2}(.+?)_{0,2}"
+              },
+              {
+                "selector": {
+                  "kind": "typeProperty"
+                },
+                "formats": ["PascalCase", "camelCase", "CONSTANT_CASE", "snake_case"]
+              },
+              {
+                "selector": {
+                  "kind": "objectLiteralProperty"
+                },
+                "match": "[$_]{0,2}(.+?)_{0,2}"
+              },
+              {
+                "selector": {
+                  "kind": "objectLiteralProperty"
+                },
+                "formats": ["PascalCase", "camelCase", "CONSTANT_CASE", "snake_case"]
+              },
+              {
+                "selector": {
+                  "kind": "enumMember"
+                },
+                "formats": ["PascalCase", "camelCase", "CONSTANT_CASE"]
+              },
+              {
+                "selector": {
+                  "kind": "typeMember"
+                },
+                "formats": ["PascalCase", "camelCase", "CONSTANT_CASE"]
+              },
+              {
+                "selector": {
+                  "kind": "typeLike"
+                },
+                "formats": ["PascalCase", "CONSTANT_CASE"]
+              },
+              {
+                "selector": {
+                  "kind": "function"
+                },
+                "match": "[$_]{0,1}(.+?)_{0,2}"
+              },
+              {
+                "selector": {
+                  "kind": "function"
+                },
+                "formats": ["PascalCase", "camelCase"]
+              },
+              {
+                "selector": {
+                  "kind": "importNamespace"
+                },
+                "formats": ["PascalCase", "camelCase"]
+              },
+              {
+                "selector": {
+                  "kind": "importAlias"
+                },
+                "formats": ["PascalCase", "camelCase", "CONSTANT_CASE"]
+              },
+              {
+                "selector": {
+                  "kind": "variable"
+                },
+                "match": "_|[$_]?(.+)"
+              },
+              {
+                "selector": {
+                  "kind": "variable"
+                },
+                "formats": ["PascalCase", "camelCase", "CONSTANT_CASE"]
+              }
+            ]
+          }
+        },
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "strictCase": false,
+            "requireAscii": true,
+            "filenameCases": ["PascalCase", "camelCase", "export"]
+          }
+        }
+      },
+      "suspicious": {
+        "noAssignInExpressions": "error",
+        "noDebugger": "error",
+        "noDoubleEquals": "error",
+        "noDuplicateCase": "error",
+        "noDuplicateJsxProps": "error",
+        "noDuplicateObjectKeys": "error",
+        "noDuplicateParameters": "error",
+        "noEmptyBlockStatements": "off",
+        "noExplicitAny": "error",
+        "noFunctionAssign": "error",
+        "noSparseArray": "error",
+        "noConsoleLog": "error"
+      },
+      "performance": {
+        "noBarrelFile": "error"
+      }
+    },
+    "ignore": ["**/*.screen.spec.ts", "**/*.screen.spec.tsx", "**/*.e2e.spec.tsx"]
+  },
+  "javascript": {
+    "jsxRuntime": "transparent",
+    "formatter": {
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "all",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSpacing": false,
+      "bracketSameLine": false,
+      "quoteStyle": "single",
+      "attributePosition": "auto"
+    },
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    }
+  },
+  "css": {
+    "parser": {
+      "cssModules": true
+    },
+    "formatter": {
+      "enabled": false,
+      "quoteStyle": "single"
+    },
+    "linter": {
+      "enabled": false
+    }
+  },
+  "overrides": [
+    {
+      "include": ["*.*ts", "*.tsx"],
+      "javascript": {
+        // todo: !!FIXME!!
+        "globals": [
+          "React",
+          "JSX",
+          "Locale",
+          "Express",
+          "ExpressBlackbox",
+          "ReactEventHandler",
+          "YandexSplitCheckoutEvents",
+          "YandexSplitCheckout",
+          "BufferEncoding",
+          "gsap",
+          "Ya",
+          "Long",
+          "__webpack_public_path__",
+          "CustomMedia",
+          "__cdnPath"
+        ]
+      }
+    },
+    {
+      "include": [
+        "*.mock.ts",
+        "jest.setup.ts",
+        "*.spec.*",
+        "**/__mocks__/**",
+        "setupMocks.ts",
+        "packages/unit-test-utils/src/utils/**",
+        "packages/telemetry/src/registerTestingTelemetry.ts",
+        // todo: !!FIXME!!
+        "services/pudge/src/client/lib/test/metrika.tsx"
+      ],
+      "javascript": {
+        "globals": [
+          "jest",
+          "it",
+          "describe",
+          "test",
+          "expect",
+          "beforeEach",
+          "afterEach",
+          "beforeAll",
+          "afterAll",
+          "YandexSplitCheckoutEvents",
+          "Locale"
+        ]
+      }
+    },
+    {
+      "include": ["**/global-error.tsx", "**/not-found.tsx", "**/mdx-components.tsx", "**/next-env.d.ts"],
+      "linter": { "rules": { "style": { "useFilenamingConvention": "off" } } }
+    },
+    {
+      "include": [
+        "./packages/nextjs-shared/src/**",
+        "./services/web-bank-ssr/src/**",
+        "./services/web-payprofit-ssr/src/**",
+        "./services/web-landings-ssr/src/**"
+      ],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@finest-int/ui-common/src/hooks/useMediaQuery": "Использование хука `useMediaQuery` нежелательно: используйте media queries в CSS и HTML",
+                  "@finest-int/ui-common/src/hooks/useColorScheme": "Использование хука `useColorScheme` нежелательно: используйте CSS-переменные `--light-theme` и `--dark-theme`"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

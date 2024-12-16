@@ -12,6 +12,7 @@
     "lint": "eslint --ext .ts,.tsx ."
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@electron-forge/cli": "^7.6.0",
     "@electron-forge/maker-deb": "^7.6.0",
     "@electron-forge/maker-rpm": "^7.6.0",
@@ -21,11 +22,18 @@
     "@electron-forge/plugin-fuses": "^7.6.0",
     "@electron-forge/plugin-vite": "^7.6.0",
     "@electron/fuses": "^1.8.0",
+    "@types/electron-squirrel-startup": "^1.0.2",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
     "electron": "33.2.1",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.31.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
     "ts-node": "^10.9.2",
     "typescript": "~4.5.4",
     "vite": "^5.4.11"
@@ -37,6 +45,16 @@
   },
   "license": "MIT",
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1"
-  }
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "electron-squirrel-startup": "^1.0.1",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "scheduler": "^0.25.0",
+    "tailwind-merge": "^2.5.5",
+    "tailwindcss-animate": "^1.0.7",
+    "xlsx": "^0.18.5"
+  },
+  "packageManager": "pnpm@9.7.1+sha512.faf344af2d6ca65c4c5c8c2224ea77a81a5e8859cbc4e06b1511ddce2f0151512431dd19e6aff31f2c6a8f5f2aced9bd2273e1fed7dd4de1868984059d2c4247"
 }
