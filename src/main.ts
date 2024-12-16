@@ -2,8 +2,8 @@ import {app, BrowserWindow, ipcMain} from 'electron';
 import path from 'node:path';
 import {promises as fs} from 'node:fs';
 import started from 'electron-squirrel-startup';
-import {from, of} from 'rxjs';
-import {mergeMap, map, tap, retry, delay} from 'rxjs/operators';
+import {from} from 'rxjs';
+import {mergeMap, tap, retry, delay} from 'rxjs/operators';
 
 import {TalonSheetSchema, TalonSchema} from '@/shared/TalonSchema';
 

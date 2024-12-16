@@ -68,6 +68,5 @@ const DownloadTalons: FC<DownloadTalonsProps> = (props) => {
 };
 
 async function downloadTalons(talons: TalonSheetSchema) {
-    console.log(window);
     window.electronAPI.downloadTalons(talons);
 }
