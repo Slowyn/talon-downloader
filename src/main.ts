@@ -1,11 +1,12 @@
-import {app, BrowserWindow, ipcMain} from 'electron';
+import {app, BrowserWindow, ipcMain, IpcMainEvent} from 'electron';
 import path from 'node:path';
 import {promises as fs} from 'node:fs';
 import started from 'electron-squirrel-startup';
-import {from} from 'rxjs';
-import {mergeMap, tap, retry, delay} from 'rxjs/operators';
+import {from, Subject} from 'rxjs';
+import {mergeMap, tap, retry, delay, catchError, takeUntil} from 'rxjs/operators';
 
 import {TalonSheetSchema, TalonSchema} from '@/shared/TalonSchema';
+import {downloadProgressInfo} from '@/shared/Download';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -13,13 +14,13 @@ if (started) {
 }
 
 const createWindow = async () => {
+    const secrets = await import('@/secrets.json');
     // Create the browser window.
     const mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
-            nodeIntegration: true,
         },
     });
 
@@ -31,9 +32,86 @@ const createWindow = async () => {
     }
 
     // Open the DevTools.
-    mainWindow.webContents.openDevTools();
+    if (process.env.NODE_ENV === 'development') {
+        mainWindow.webContents.openDevTools();
+    }
 
     ipcMain.on('download-talons', downloadTalons);
+
+    const TOKEN = secrets.REDMINE_TOKEN || '';
+    async function downloadTalons(event: IpcMainEvent, talons: TalonSheetSchema, xlsxFileName: string) {
+        mainWindow.webContents.send('download-talons-start');
+        let completed = 0;
+        const abortSignal = new Subject<void>();
+        function handleAbort() {
+            console.error('Aborting download');
+            abortSignal.next();
+            abortSignal.complete();
+            ipcMain.removeListener('abort-download-talons', handleAbort);
+        }
+        from(talons)
+            .pipe(
+                mergeMap(
+                    (talon) =>
+                        from(downloadTalon(talon, xlsxFileName)).pipe(
+                            catchError((error) => {
+                                console.error(error);
+                                throw error;
+                            }),
+                            retry(3),
+                            delay(1000),
+                            tap((talon) => {
+                                mainWindow.webContents.send(
+                                    'download-talons-progress',
+                                    downloadProgressInfo(completed, talons.length, talon),
+                                );
+                                completed++;
+                            }),
+                        ),
+                    8,
+                ),
+                delay(500),
+                takeUntil(abortSignal),
+            )
+            .subscribe({
+                error(error) {
+                    console.error(error);
+                    mainWindow.webContents.send('download-talons-error', error);
+                },
+                complete() {
+                    mainWindow.webContents.send('download-talons-complete');
+                    ipcMain.removeListener('abort-download-talons', handleAbort);
+                },
+            });
+        ipcMain.addListener('abort-download-talons', handleAbort);
+    }
+
+    async function downloadTalon(talon: TalonSchema, xlsxFileName: string) {
+        const talonId = talon['#'];
+        const response = await fetch(`https://grunt.rm.mosreg.ru/issues/${talonId}.pdf`, {
+            method: 'GET',
+            redirect: 'follow',
+            headers: {
+                'X-Redmine-API-Key': TOKEN,
+            },
+        });
+        if (!response.ok) {
+            const error = await response.text();
+            console.error(error);
+            throw new Error(error);
+        }
+        const blob = await response.blob();
+        const blobArray = await blob.arrayBuffer();
+        const folderName = `folder_${xlsxFileName}`;
+        await fs.mkdir(path.resolve(app.getPath('downloads'), folderName), {recursive: true});
+        const filePath = path.join(
+            app.getPath('downloads'),
+            folderName,
+            `elektronnye_talony_na_vyvoz_ossig-${talonId}.pdf`,
+        );
+        await fs.writeFile(filePath, Buffer.from(blobArray));
+        return talon;
+    }
 };
 
 // This method will be called when Electron has finished
@@ -60,41 +138,3 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-const TOKEN = process.env.REDMINE_TOKEN;
-
-async function downloadTalons(event, talons: TalonSheetSchema) {
-    let completed = 0;
-    from(talons)
-        .pipe(
-            mergeMap((talon) => from(downloadTalon(talon)).pipe(retry(3), delay(1000)), 5),
-            tap(() => {
-                completed++;
-            }),
-            delay(500),
-        )
-        .subscribe({
-            next() {},
-            error(error) {},
-            complete() {},
-        });
-}
-
-async function downloadTalon(talon: TalonSchema) {
-    const talonId = talon['#'];
-    const response = await fetch(`https://grunt.rm.mosreg.ru/issues/${talonId}.pdf`, {
-        method: 'GET',
-        redirect: 'follow',
-        headers: {
-            'X-Redmine-API-Key': TOKEN,
-        },
-    });
-    if (!response.ok) {
-        const error = await response.text();
-        console.error(error);
-        throw new Error(error);
-    }
-    const blob = await response.blob();
-    const blobArray = await blob.arrayBuffer();
-    const filePath = path.join(app.getPath('downloads'), `elektronnye_talony_na_vyvoz_ossig-${talonId}.pdf`);
-    await fs.writeFile(filePath, Buffer.from(blobArray));
-}
