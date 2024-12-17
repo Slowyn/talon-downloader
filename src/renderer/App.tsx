@@ -5,7 +5,7 @@ import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {Progress} from '@/components/ui/progress';
 import {TalonSchema, TalonSheetSchema, talonSheetSchema} from '@/shared/TalonSchema';
-import {DownloadProgressInfo} from '@/shared/Download';
+import {TalonDownloadProgressInfo} from '@/shared/Download';
 
 function readSheets(file: File): Promise<Record<string, string>[]> {
     return new Promise((resolve, reject) => {
@@ -60,7 +60,7 @@ type DownloadTalonsProps = {
     talons: TalonSheetSchema;
     xlsxFileName: string;
 };
-function calculateProgress(progress: DownloadProgressInfo<TalonSchema> | undefined): number {
+function calculateProgress(progress: TalonDownloadProgressInfo | undefined): number {
     if (!progress) {
         return 0;
     }
@@ -69,30 +69,34 @@ function calculateProgress(progress: DownloadProgressInfo<TalonSchema> | undefin
 const DownloadTalons: FC<DownloadTalonsProps> = (props) => {
     const {talons, xlsxFileName} = props;
     const [isDownloading, setIsDownloading] = useState(false);
-    const [progress, setProgress] = useState<DownloadProgressInfo<TalonSchema> | undefined>(undefined);
+    const [progress, setProgress] = useState<TalonDownloadProgressInfo | undefined>(undefined);
     const [error, setError] = useState<Error | undefined>(undefined);
     const progressValue = calculateProgress(progress);
 
     useEffect(() => {
         window.electronAPI.onDownloadTalonsStart(() => {
+            console.log('DownloadTalons: onDownloadTalonsStart');
             setIsDownloading(true);
         });
     }, []);
 
     useEffect(() => {
-        window.electronAPI.onDownloadTalonProgress((downloadInfo: DownloadProgressInfo<TalonSchema>) => {
+        window.electronAPI.onDownloadTalonProgress((downloadInfo: TalonDownloadProgressInfo) => {
+            console.log('DownloadTalons: onDownloadTalonProgress', downloadInfo);
             setProgress(downloadInfo);
         });
     }, []);
 
     useEffect(() => {
         window.electronAPI.onDownloadTalonError((error: Error) => {
+            console.log('DownloadTalons: onDownloadTalonError', error);
             setError(error);
         });
     }, []);
 
     useEffect(() => {
         window.electronAPI.onDownloadTalonComplete(() => {
+            console.log('DownloadTalons: onDownloadTalonComplete');
             setIsDownloading(false);
             setProgress(undefined);
         });

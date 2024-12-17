@@ -28,7 +28,7 @@
 
 import {createRoot} from 'react-dom/client';
 
-import {App} from '@/App';
+import {App} from '@/renderer/App';
 import './index.css';
 
 const domNode = document.getElementById('root');
