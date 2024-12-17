@@ -302,7 +302,6 @@
     {
       "include": ["*.*ts", "*.tsx"],
       "javascript": {
-        // todo: !!FIXME!!
         "globals": [
           "React",
           "JSX",
@@ -310,15 +309,14 @@
           "Express",
           "ExpressBlackbox",
           "ReactEventHandler",
-          "YandexSplitCheckoutEvents",
-          "YandexSplitCheckout",
           "BufferEncoding",
           "gsap",
-          "Ya",
           "Long",
           "__webpack_public_path__",
           "CustomMedia",
-          "__cdnPath"
+          "__cdnPath",
+          "MAIN_WINDOW_VITE_DEV_SERVER_URL",
+          "MAIN_WINDOW_VITE_NAME"
         ]
       }
     },
