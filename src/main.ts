@@ -33,7 +33,7 @@ const createWindow = async () => {
 
     // Open the DevTools.
     if (process.env.NODE_ENV === 'development') {
-        mainWindow.webContents.openDevTools();
+        mainWindow.webContents.openDevTools({mode: 'detach'});
     }
 
     ipcMain.on('download-talons', downloadTalons);
