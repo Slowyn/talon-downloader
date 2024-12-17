@@ -4,7 +4,7 @@ import * as xlsx from 'xlsx';
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {Progress} from '@/components/ui/progress';
-import {TalonSchema, TalonSheetSchema, talonSheetSchema} from '@/shared/TalonSchema';
+import {TalonSheetSchema, talonSheetSchema} from '@/shared/TalonSchema';
 import {TalonDownloadProgressInfo} from '@/shared/Download';
 
 function readSheets(file: File): Promise<Record<string, string>[]> {
@@ -75,28 +75,24 @@ const DownloadTalons: FC<DownloadTalonsProps> = (props) => {
 
     useEffect(() => {
         window.electronAPI.onDownloadTalonsStart(() => {
-            console.log('DownloadTalons: onDownloadTalonsStart');
             setIsDownloading(true);
         });
     }, []);
 
     useEffect(() => {
         window.electronAPI.onDownloadTalonProgress((downloadInfo: TalonDownloadProgressInfo) => {
-            console.log('DownloadTalons: onDownloadTalonProgress', downloadInfo);
             setProgress(downloadInfo);
         });
     }, []);
 
     useEffect(() => {
         window.electronAPI.onDownloadTalonError((error: Error) => {
-            console.log('DownloadTalons: onDownloadTalonError', error);
             setError(error);
         });
     }, []);
 
     useEffect(() => {
-        window.electronAPI.onDownloadTalonComplete(() => {
-            console.log('DownloadTalons: onDownloadTalonComplete');
+        window.electronAPI.onDownloadTalonsComplete(() => {
             setIsDownloading(false);
             setProgress(undefined);
         });

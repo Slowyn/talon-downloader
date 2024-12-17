@@ -13,6 +13,19 @@ import {
     downloadTalonsError,
 } from '@/shared/events';
 
+declare global {
+    interface Window {
+        electronAPI: {
+            downloadTalons: (talons: TalonSheetSchema, xlsxFileName: string) => void;
+            abortDownloadTalons: () => void;
+            onDownloadTalonsStart: (callback: () => void) => void;
+            onDownloadTalonProgress: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) => void;
+            onDownloadTalonError: (callback: (error: Error) => void) => void;
+            onDownloadTalonsComplete: (callback: () => void) => void;
+        };
+    }
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
     downloadTalons: (talons: TalonSheetSchema, xlsxFileName: string) =>
         ipcRenderer.send(downloadTalons, talons, xlsxFileName),
@@ -26,7 +39,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on(downloadTalonsError, (event, error) => {
             callback(error);
         }),
-    onDownloadTalonComplete: (callback: () => void) =>
+    onDownloadTalonsComplete: (callback: () => void) =>
         ipcRenderer.on(downloadTalonsComplete, (event) => {
             callback();
         }),
