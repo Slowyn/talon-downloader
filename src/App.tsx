@@ -40,7 +40,6 @@ export const App = () => {
                 const parseResult = talonSheetSchema.safeParse(data);
                 if (parseResult.success) {
                     const data = parseResult.data;
-                    console.log(data);
                     setSheets(data);
                 } else {
                     console.error(parseResult.error);
