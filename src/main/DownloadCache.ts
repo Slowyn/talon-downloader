@@ -1,29 +1,16 @@
-export type DownlodStatus =
-    | {
-          status: 'NotStarted' | 'InProgress' | 'Completed';
-      }
-    | {
-          status: 'Failed';
-          error: string;
-      };
+import {DetailedDownloadInfo, DownloadStatus} from '@/shared/Download';
 
 export type IDownloadCache = {
     readonly xlsxFileName: string;
     readonly talonIds: string[];
-    total: number;
-    completed: number;
-    failed: number;
-    statuses: {
-        [talonId: string]: DownlodStatus;
-    };
-};
+} & DetailedDownloadInfo;
 
 export class DownloadCache implements IDownloadCache {
     total: number;
     completed: number;
     failed: number;
     statuses: {
-        [talonId: string]: DownlodStatus;
+        [talonId: string]: DownloadStatus;
     };
     constructor(
         public readonly xlsxFileName: string,
@@ -85,13 +72,13 @@ export class DownloadCache implements IDownloadCache {
         return this.statuses[talonId];
     }
 
-    public getProgress() {
-        const {total, completed, failed} = this;
+    public getProgress(): DetailedDownloadInfo {
+        const {total, completed, failed, statuses} = this;
         return {
             total,
             completed,
             failed,
-            progress: completed / total,
+            statuses,
         };
     }
 

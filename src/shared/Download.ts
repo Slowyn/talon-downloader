@@ -20,3 +20,21 @@ export const downloadProgressInfo = <T>(
 export type TalonDownloadProgressInfo = DownloadProgressInfo<{
     talonId: string;
 }>;
+
+export type DownloadStatus =
+    | {
+          status: 'NotStarted' | 'InProgress' | 'Completed';
+      }
+    | {
+          status: 'Failed';
+          error: string;
+      };
+
+export type DetailedDownloadInfo = {
+    total: number;
+    completed: number;
+    failed: number;
+    statuses: {
+        [talonId: string]: DownloadStatus;
+    };
+};

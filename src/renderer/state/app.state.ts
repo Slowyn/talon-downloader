@@ -1,3 +1,4 @@
+import {create} from 'zustand';
 import {TalonSheetSchema} from '@/shared/TalonSchema';
 
 type DownloadStatus =
@@ -10,10 +11,12 @@ type DownloadStatus =
       };
 
 export type AppState = {
+    selectedXlsxFile: string | undefined;
     loadedXlsxFiles: Set<string>;
     xlsx: {
         [xlsxFileName: string]: {
             talons: TalonSheetSchema;
+            status: 'NotStarted' | 'InProgress' | 'Stopped' | 'Completed';
         };
     };
     downloadState: {
@@ -29,17 +32,10 @@ export type AppState = {
 };
 
 export const defaultState: AppState = {
+    selectedXlsxFile: undefined,
     loadedXlsxFiles: new Set(),
     xlsx: {},
     downloadState: {},
 };
 
-function addXlsxFile(state: AppState, xlsxFileName: string, talons: TalonSheetSchema) {
-    if (state.loadedXlsxFiles.has(xlsxFileName)) {
-        return;
-    }
-    state.loadedXlsxFiles.add(xlsxFileName);
-    state.xlsx[xlsxFileName] = {
-        talons,
-    };
-}
+export const useAppState = create<AppState>(() => defaultState);

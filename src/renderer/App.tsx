@@ -1,125 +1,92 @@
-import {FC, useEffect, useState} from 'react';
-import * as xlsx from 'xlsx';
+import {FC, useCallback, useEffect, useMemo} from 'react';
 
 import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
 import {Progress} from '@/components/ui/progress';
-import {TalonSheetSchema, talonSheetSchema} from '@/shared/TalonSchema';
 import {TalonDownloadProgressInfo} from '@/shared/Download';
 
-function readSheets(file: File): Promise<Record<string, string>[]> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const data = event.target?.result;
-            if (data) {
-                const workbook = xlsx.read(data, {type: 'array'});
-                const json = xlsx.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]) as Record<
-                    string,
-                    string
-                >[];
-                resolve(json);
-            }
-        };
-        reader.onerror = (event) => {
-            reject(event);
-        };
-        reader.readAsArrayBuffer(file);
-    });
-}
+import {useAppState} from '@/renderer/state/app.state';
+import {createAppActions} from '@/renderer/state/app.actions';
+import {
+    getTalonsDownloadProgress,
+    getCurrentDownloadStatus,
+    getSelectedXlsxFile,
+    getTalonsDowloadStatuses,
+    getDownloadPercent,
+} from '@/renderer/state/app.selectors';
 
 export const App = () => {
-    const [xlsxFile, setXlsxFile] = useState<File | undefined>(undefined);
-    const [sheets, setSheets] = useState<TalonSheetSchema | undefined>(undefined);
-    const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setXlsxFile(event.target.files?.[0]);
-    };
-    useEffect(() => {
-        if (xlsxFile) {
-            readSheets(xlsxFile).then((data) => {
-                const parseResult = talonSheetSchema.safeParse(data);
-                if (parseResult.success) {
-                    const data = parseResult.data;
-                    setSheets(data);
-                } else {
-                    console.error(parseResult.error);
-                }
-            });
-        }
-    }, [xlsxFile]);
+    const xlsxFile = useAppState(getSelectedXlsxFile);
+    const actions = createAppActions(useAppState.getState, useAppState.setState);
+    const onFileChange = useCallback(
+        (event: React.ChangeEvent<HTMLInputElement>) => {
+            const file = event.target.files?.[0];
+            if (file) {
+                actions.setXlsxFile(file);
+            }
+        },
+        [actions],
+    );
 
     return (
         <div>
             <Input id="sheets" type="file" onChange={onFileChange} accept=".xlsx" />
-            {xlsxFile && sheets && <DownloadTalons talons={sheets} xlsxFileName={xlsxFile.name} />}
+            {xlsxFile && <DownloadTalons />}
         </div>
     );
 };
 
-type DownloadTalonsProps = {
-    talons: TalonSheetSchema;
-    xlsxFileName: string;
-};
-function calculateProgress(progress: TalonDownloadProgressInfo | undefined): number {
-    if (!progress) {
-        return 0;
-    }
-    return Math.round((progress.completed / progress.total) * 100);
-}
-const DownloadTalons: FC<DownloadTalonsProps> = (props) => {
-    const {talons, xlsxFileName} = props;
-    const [isDownloading, setIsDownloading] = useState(false);
-    const [progress, setProgress] = useState<TalonDownloadProgressInfo | undefined>(undefined);
-    const [error, setError] = useState<Error | undefined>(undefined);
-    const progressValue = calculateProgress(progress);
+const DownloadTalons: FC = () => {
+    const downloadStatus = useAppState(getCurrentDownloadStatus);
+    const progress = useAppState(getTalonsDownloadProgress);
+    const xlsxFileName = useAppState(getSelectedXlsxFile);
+    const talonsStatuses = useAppState(getTalonsDowloadStatuses);
+    const progressValue = useAppState(getDownloadPercent);
+    const actions = useMemo(() => createAppActions(useAppState.getState, useAppState.setState), []);
 
     useEffect(() => {
-        window.electronAPI.onDownloadTalonsStart(() => {
-            setIsDownloading(true);
-        });
-    }, []);
-
-    useEffect(() => {
+        // TODO: Implement unsubscribe!
         window.electronAPI.onDownloadTalonProgress((downloadInfo: TalonDownloadProgressInfo) => {
-            setProgress(downloadInfo);
+            actions.updateDownloadStatus(downloadInfo.item.talonId, {status: 'Completed'});
         });
-    }, []);
+    }, [actions]);
 
     useEffect(() => {
-        window.electronAPI.onDownloadTalonError((error: Error) => {
-            setError(error);
+        window.electronAPI.onDownloadTalonError((downloadInfo: TalonDownloadProgressInfo, error: Error) => {
+            actions.updateDownloadStatus(downloadInfo.item.talonId, {status: 'Completed'});
         });
-    }, []);
+    }, [actions]);
 
     useEffect(() => {
         window.electronAPI.onDownloadTalonsComplete(() => {
-            setIsDownloading(false);
-            setProgress(undefined);
+            actions.completeDownloadingTalons();
         });
-    }, []);
+    }, [actions]);
 
     return (
         <div>
-            <div>Всего талонов: {talons.length}</div>
-            {isDownloading && (
-                <div>
-                    Талонов скачано: {progress?.completed} ({progressValue}%)
-                </div>
-            )}
-            {isDownloading && <Progress value={progressValue} />}
-            {error && <pre>{error.message}</pre>}
-            <Button disabled={isDownloading} onClick={() => downloadTalons(talons, xlsxFileName)}>
-                Скачать талоны
-            </Button>
-            {isDownloading && (
-                <Button variant={'destructive'} onClick={window.electronAPI.abortDownloadTalons}>
-                    Отменить скачивание
+            <div>Файл: {xlsxFileName}</div>
+            <div>Всего талонов: {Object.keys(talonsStatuses).length}</div>
+            <div>
+                Талонов скачано: {progress.completed} ({progressValue}%)
+            </div>
+            <Progress value={progressValue} />
+            {downloadStatus === 'NotStarted' && (
+                <Button disabled={downloadStatus !== 'NotStarted'} onClick={actions.startDownloadingTalons}>
+                    Скачать талоны
                 </Button>
             )}
+            {downloadStatus === 'InProgress' && (
+                <Button variant={'destructive'} onClick={actions.stopDownloadingTalons}>
+                    Пауза
+                </Button>
+            )}
+            {downloadStatus === 'Stopped' && (
+                <Button variant={'destructive'} onClick={actions.resumeDownloadingTalons}>
+                    Продолжить скачивание
+                </Button>
+            )}
+            {downloadStatus === 'Completed' && <Button>Все талоны загружены</Button>}
         </div>
     );
 };
-
-async function downloadTalons(talons: TalonSheetSchema, xlsxFileName: string) {
-    window.electronAPI.downloadTalons(talons, xlsxFileName);
-}

@@ -25,6 +25,7 @@ type DownloadEvent =
       }
     | {
           event: typeof downloadTalonsError;
+          downloadInfo: TalonDownloadProgressInfo;
           error: string;
       }
     | {
@@ -67,6 +68,24 @@ export class TalonDownloadManager {
         return cache;
     }
 
+    public async getDownloadCacheInfoFs(xlsxFileName: string, talonIds: string[]) {
+        const cache = await this.restoreCache(xlsxFileName, talonIds);
+        if (!cache) {
+            throw new Error('Failed to restore cache');
+        }
+
+        return cache.getProgress();
+    }
+
+    public getDownloadCacheInfo(xlsxFileName: string) {
+        const cache = this.cache.get(xlsxFileName);
+        if (!cache) {
+            throw new Error('Failed to restore cache');
+        }
+
+        return cache.getProgress();
+    }
+
     public async downloadTalons(talons: string[], xlsxFileName: string, abortSignal: Subject<void>) {
         const cache = await this.restoreCache(xlsxFileName, talons);
         if (!cache) {
@@ -101,7 +120,17 @@ export class TalonDownloadManager {
                                 // continue downloading
                                 const errorMessage = error instanceof Error ? error.message : String(error);
                                 cache.fail(talon, errorMessage);
-                                downloadEventsStream.next({event: downloadTalonsError, error: errorMessage});
+                                const progress = cache.getProgress();
+                                downloadEventsStream.next({
+                                    event: downloadTalonsError,
+                                    downloadInfo: downloadProgressInfo(
+                                        progress.completed,
+                                        progress.failed,
+                                        progress.total,
+                                        {talonId: talon},
+                                    ),
+                                    error: errorMessage,
+                                });
                                 return of(undefined);
                             }),
                         ),

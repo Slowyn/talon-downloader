@@ -1,4 +1,4 @@
-import {app, BrowserWindow, ipcMain, IpcMainEvent} from 'electron';
+import {app, BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent} from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import {Subject} from 'rxjs';
@@ -10,6 +10,8 @@ import {
     downloadTalonsError,
     downloadTalonsProgress,
     downloadTalonsStart,
+    getDetailedDownloadInfo,
+    getDetailedDownloadInfoFs,
 } from './shared/events';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -42,6 +44,18 @@ const createWindow = async () => {
 
     const TOKEN = secrets.REDMINE_TOKEN || '';
     const talonDownloadManager = new TalonDownloadManager(TOKEN, app.getPath('downloads'));
+    ipcMain.handle(getDetailedDownloadInfo, async (event: IpcMainInvokeEvent, xlsxFileName: string) => {
+        return talonDownloadManager.getDownloadCacheInfo(xlsxFileName);
+    });
+    ipcMain.handle(
+        getDetailedDownloadInfoFs,
+        async (event: IpcMainInvokeEvent, xlsxFileName: string, talons: TalonSheetSchema) => {
+            return talonDownloadManager.getDownloadCacheInfoFs(
+                xlsxFileName,
+                talons.map((talon) => talon['#'].toString()),
+            );
+        },
+    );
     ipcMain.on('download-talons', async (event: IpcMainEvent, talons: TalonSheetSchema, xlsxFileName: string) => {
         const talonIds = talons.map((talon) => talon['#'].toString());
         const abortSignal = new Subject<void>();
@@ -59,7 +73,7 @@ const createWindow = async () => {
                 if (event.event === downloadTalonsProgress) {
                     mainWindow.webContents.send(event.event, event.downloadInfo);
                 } else if (event.event === downloadTalonsError) {
-                    mainWindow.webContents.send(event.event, event.error);
+                    mainWindow.webContents.send(event.event, event.downloadInfo, event.error);
                 } else {
                     mainWindow.webContents.send(event.event);
                 }
