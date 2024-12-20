@@ -40,9 +40,10 @@ export class TalonDownloadManager {
     private redmineApi: RedmineApi;
     constructor(
         token: string,
+        reserveToken: string,
         private dowloadPath: string,
     ) {
-        this.redmineApi = new RedmineApi(token);
+        this.redmineApi = new RedmineApi(token, reserveToken);
     }
 
     async restoreCache(xlsxFileName: string, talonIds: string[]) {

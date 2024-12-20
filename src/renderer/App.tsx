@@ -52,8 +52,8 @@ const DownloadTalons: FC = () => {
     }, [actions]);
 
     useEffect(() => {
-        window.electronAPI.onDownloadTalonError((downloadInfo: TalonDownloadProgressInfo, error: Error) => {
-            actions.updateDownloadStatus(downloadInfo.item.talonId, {status: 'Completed'});
+        window.electronAPI.onDownloadTalonError((downloadInfo: TalonDownloadProgressInfo, error: string) => {
+            actions.updateDownloadStatus(downloadInfo.item.talonId, {status: 'Failed', error});
         });
     }, [actions]);
 

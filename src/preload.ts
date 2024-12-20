@@ -22,7 +22,7 @@ declare global {
             abortDownloadTalons: () => void;
             onDownloadTalonsStart: (callback: () => void) => void;
             onDownloadTalonProgress: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) => void;
-            onDownloadTalonError: (callback: (downloadInfo: TalonDownloadProgressInfo, error: Error) => void) => void;
+            onDownloadTalonError: (callback: (downloadInfo: TalonDownloadProgressInfo, error: string) => void) => void;
             onDownloadTalonsComplete: (callback: () => void) => void;
             getDetailedDownloadInfo: (xlsxFileName: string) => Promise<DetailedDownloadInfo>;
             getDetailedDownloadInfoFs: (

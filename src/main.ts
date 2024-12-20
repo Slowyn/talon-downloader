@@ -43,7 +43,8 @@ const createWindow = async () => {
     }
 
     const TOKEN = secrets.REDMINE_TOKEN || '';
-    const talonDownloadManager = new TalonDownloadManager(TOKEN, app.getPath('downloads'));
+    const RESERVE_TOKEN = secrets.RESERVE_REMDINE_TOKEN || '';
+    const talonDownloadManager = new TalonDownloadManager(TOKEN, RESERVE_TOKEN, app.getPath('downloads'));
     ipcMain.handle(getDetailedDownloadInfo, async (event: IpcMainInvokeEvent, xlsxFileName: string) => {
         return talonDownloadManager.getDownloadCacheInfo(xlsxFileName);
     });
