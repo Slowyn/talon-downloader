@@ -30,7 +30,7 @@ export const App = () => {
 
     return (
         <div>
-            <Input id="sheets" type="file" onChange={onFileChange} accept=".xlsx" />
+            <Input id="sheets" type="file" onChange={onFileChange} accept=".xlsx, .csv" />
             {xlsxFile && <DownloadTalons />}
         </div>
     );
@@ -66,10 +66,11 @@ const DownloadTalons: FC = () => {
     return (
         <div>
             <div>Файл: {xlsxFileName}</div>
-            <div>Всего талонов: {Object.keys(talonsStatuses).length}</div>
+            <div>Всего талонов: {progress.total}</div>
             <div>
                 Талонов скачано: {progress.completed} ({progressValue}%)
             </div>
+            <div>Не удалось загрузить: {progress.failed}</div>
             <Progress value={progressValue} />
             {downloadStatus === 'NotStarted' && (
                 <Button disabled={downloadStatus !== 'NotStarted'} onClick={actions.startDownloadingTalons}>
