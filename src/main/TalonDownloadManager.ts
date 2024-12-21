@@ -1,24 +1,17 @@
 import {promises as fs} from 'node:fs';
 import path from 'node:path';
 
-import {from, Subject, of} from 'rxjs';
-import {mergeMap, tap, retry, delay, catchError, takeUntil} from 'rxjs/operators';
+import {from, Subject, of, Observable} from 'rxjs';
+import {mergeMap, tap, retry, delay, catchError, takeUntil, map, withLatestFrom} from 'rxjs/operators';
 
+import {normalizeError} from '@/lib/normalizeError';
 import {DownloadCache} from '@/main/DownloadCache';
 import {TalonDownloadProgressInfo, downloadProgressInfo} from '@/shared/Download';
-import {
-    downloadTalonsStart,
-    downloadTalonsError,
-    downloadTalonsProgress,
-    downloadTalonsComplete,
-} from '@/shared/events';
+import {downloadTalonsError, downloadTalonsProgress} from '@/shared/events';
 import {RedmineApi} from '@/main/RedmineApi';
 import {makeFileName, makeFolderName, getTalonIdFromFileName, testTalonFileFormat} from '@/main/outputFile';
 
 type DownloadEvent =
-    | {
-          event: typeof downloadTalonsStart;
-      }
     | {
           event: typeof downloadTalonsProgress;
           downloadInfo: TalonDownloadProgressInfo;
@@ -27,12 +20,6 @@ type DownloadEvent =
           event: typeof downloadTalonsError;
           downloadInfo: TalonDownloadProgressInfo;
           error: string;
-      }
-    | {
-          event: typeof downloadTalonsComplete;
-      }
-    | {
-          event: typeof downloadTalonsComplete;
       };
 
 export class TalonDownloadManager {
@@ -66,89 +53,67 @@ export class TalonDownloadManager {
             this.cache.set(xlsxFileName, new DownloadCache(xlsxFileName, talonIds));
         }
         const cache = this.cache.get(xlsxFileName);
+        if (cache === undefined) {
+            throw new Error('Failed to restore cache');
+        }
         return cache;
     }
 
     public async getDownloadCacheInfoFs(xlsxFileName: string, talonIds: string[]) {
         const cache = await this.restoreCache(xlsxFileName, talonIds);
-        if (!cache) {
-            throw new Error('Failed to restore cache');
-        }
-
         return cache.getProgress();
     }
 
     public getDownloadCacheInfo(xlsxFileName: string) {
         const cache = this.cache.get(xlsxFileName);
         if (!cache) {
-            throw new Error('Failed to restore cache');
+            throw new Error('Cache not found');
         }
 
         return cache.getProgress();
     }
 
-    public async downloadTalons(talons: string[], xlsxFileName: string, abortSignal: Subject<void>) {
-        const cache = await this.restoreCache(xlsxFileName, talons);
-        if (!cache) {
-            throw new Error('Failed to construct cache');
-        }
-        const downloadEventsStream = new Subject<DownloadEvent>();
-        downloadEventsStream.next({event: downloadTalonsStart});
-        const handleProgress = (talonId: string) => {
-            cache.complete(talonId);
-            const progress = cache.getProgress();
-            downloadEventsStream.next({
-                event: downloadTalonsProgress,
-                downloadInfo: downloadProgressInfo(progress.completed, progress.failed, progress.total, {talonId}),
-            });
-        };
-        const uncompletedTalons = cache.getUncompletedTalons();
-        from(uncompletedTalons)
-            .pipe(
-                mergeMap(
-                    (talon) =>
-                        from(this.downloadTalon(talon, xlsxFileName)).pipe(
-                            catchError((error) => {
-                                // Just log the error
-                                console.error(error);
-                                throw error;
-                            }),
-                            retry(3),
-                            delay(1000),
-                            tap(handleProgress),
-                            catchError((error) => {
-                                // count error, dispatch error and then
-                                // continue downloading
-                                const errorMessage = error instanceof Error ? error.message : String(error);
-                                cache.fail(talon, errorMessage);
-                                const progress = cache.getProgress();
-                                downloadEventsStream.next({
-                                    event: downloadTalonsError,
-                                    downloadInfo: downloadProgressInfo(
-                                        progress.completed,
-                                        progress.failed,
-                                        progress.total,
-                                        {talonId: talon},
-                                    ),
-                                    error: errorMessage,
-                                });
-                                return of(undefined);
-                            }),
-                        ),
-                    8,
-                ),
-                takeUntil(abortSignal),
-            )
-            .subscribe({
-                error: (error) => {
+    public downloadTalons(talons: string[], xlsxFileName: string, abortSignal: Subject<void>) {
+        const createTalonDownloadStream = (talon: string, cache: DownloadCache): Observable<DownloadEvent> =>
+            from(this.downloadTalon(talon, xlsxFileName)).pipe(
+                catchError((error) => {
+                    // Just log the error
                     console.error(error);
-                },
-                complete: () => {
-                    downloadEventsStream.next({event: downloadTalonsComplete});
-                    downloadEventsStream.complete();
-                },
-            });
-        return downloadEventsStream.asObservable();
+                    throw error;
+                }),
+                retry(3),
+                delay(1000),
+                tap((talonId) => cache.complete(talonId)),
+                map((talonId) => {
+                    const progress = cache.getProgress();
+                    return {
+                        event: downloadTalonsProgress,
+                        downloadInfo: downloadProgressInfo(progress.completed, progress.failed, progress.total, {
+                            talonId,
+                        }),
+                    } as DownloadEvent;
+                }),
+                catchError((error) => {
+                    // count error, dispatch error and then
+                    // continue downloading
+                    const errorMessage = normalizeError(error).message;
+                    cache.fail(talon, errorMessage);
+                    const progress = cache.getProgress();
+                    return of({
+                        event: downloadTalonsError,
+                        downloadInfo: downloadProgressInfo(progress.completed, progress.failed, progress.total, {
+                            talonId: talon,
+                        }),
+                        error: errorMessage,
+                    } as DownloadEvent);
+                }),
+            );
+
+        return from(this.restoreCache(xlsxFileName, talons)).pipe(
+            mergeMap((cache) => from(cache.getUncompletedTalons()).pipe(withLatestFrom(of(cache)))),
+            mergeMap(([talon, cache]) => createTalonDownloadStream(talon, cache), 8),
+            takeUntil(abortSignal),
+        );
     }
 
     private async downloadTalon(talonId: string, xlsxFileName: string) {

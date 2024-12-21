@@ -66,7 +66,7 @@ const createWindow = async () => {
             abortSignal.complete();
             ipcMain.removeListener('abort-download-talons', handleAbort);
         };
-        const downloadStream = await talonDownloadManager.downloadTalons(talonIds, xlsxFileName, abortSignal);
+        const downloadStream = talonDownloadManager.downloadTalons(talonIds, xlsxFileName, abortSignal);
         ipcMain.once('abort-download-talons', handleAbort);
         mainWindow.webContents.send(downloadTalonsStart);
         downloadStream.subscribe({
@@ -75,8 +75,6 @@ const createWindow = async () => {
                     mainWindow.webContents.send(event.event, event.downloadInfo);
                 } else if (event.event === downloadTalonsError) {
                     mainWindow.webContents.send(event.event, event.downloadInfo, event.error);
-                } else {
-                    mainWindow.webContents.send(event.event);
                 }
             },
             complete: () => {
