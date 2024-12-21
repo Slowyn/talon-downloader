@@ -74,6 +74,7 @@ export class TalonDownloadManager {
     }
 
     public downloadTalons(talons: string[], xlsxFileName: string, abortSignal: Subject<void>) {
+        const concurrency = 8;
         const createTalonDownloadStream = (talon: string, cache: DownloadCache): Observable<DownloadEvent> =>
             from(this.downloadTalon(talon, xlsxFileName)).pipe(
                 catchError((error) => {
@@ -111,8 +112,9 @@ export class TalonDownloadManager {
 
         return from(this.restoreCache(xlsxFileName, talons)).pipe(
             mergeMap((cache) => from(cache.getUncompletedTalons()).pipe(withLatestFrom(of(cache)))),
-            mergeMap(([talon, cache]) => createTalonDownloadStream(talon, cache), 8),
+            mergeMap(([talon, cache]) => createTalonDownloadStream(talon, cache), concurrency),
             takeUntil(abortSignal),
+            map((v) => v),
         );
     }
 
