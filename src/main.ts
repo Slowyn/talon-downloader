@@ -6,13 +6,14 @@ import {Subject} from 'rxjs';
 import {TalonDownloadManager} from '@/main/TalonDownloadManager';
 import {TalonSheetSchema} from '@/shared/TalonSchema';
 import {
+    abortDownloadTalons,
     downloadTalonsComplete,
     downloadTalonsError,
     downloadTalonsProgress,
     downloadTalonsStart,
     getDetailedDownloadInfo,
     getDetailedDownloadInfoFs,
-} from './shared/events';
+} from '@/shared/events';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -61,13 +62,12 @@ const createWindow = async () => {
         const talonIds = talons.map((talon) => talon['#'].toString());
         const abortSignal = new Subject<void>();
         const handleAbort = () => {
-            console.error('Aborting download');
             abortSignal.next();
             abortSignal.complete();
-            ipcMain.removeListener('abort-download-talons', handleAbort);
+            ipcMain.removeListener(abortDownloadTalons, handleAbort);
         };
         const downloadStream = talonDownloadManager.downloadTalons(talonIds, xlsxFileName, abortSignal);
-        ipcMain.once('abort-download-talons', handleAbort);
+        ipcMain.once(abortDownloadTalons, handleAbort);
         mainWindow.webContents.send(downloadTalonsStart);
         downloadStream.subscribe({
             next: (event) => {
@@ -78,8 +78,10 @@ const createWindow = async () => {
                 }
             },
             complete: () => {
-                mainWindow.webContents.send(downloadTalonsComplete);
-                ipcMain.removeListener('abort-download-talons', handleAbort);
+                if (talonDownloadManager.isDownloadFinished(xlsxFileName)) {
+                    mainWindow.webContents.send(downloadTalonsComplete);
+                }
+                ipcMain.removeListener(abortDownloadTalons, handleAbort);
             },
         });
     });
