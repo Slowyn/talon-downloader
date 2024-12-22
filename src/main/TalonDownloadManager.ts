@@ -1,8 +1,22 @@
 import {promises as fs} from 'node:fs';
 import path from 'node:path';
 
-import {from, Subject, of, Observable} from 'rxjs';
-import {mergeMap, tap, retry, delay, catchError, takeUntil, map, withLatestFrom} from 'rxjs/operators';
+import {from, Subject, of, Observable, BehaviorSubject, concat, defer, combineLatest, zip, EMPTY} from 'rxjs';
+import {
+    mergeMap,
+    tap,
+    retry,
+    delay,
+    catchError,
+    takeUntil,
+    map,
+    withLatestFrom,
+    finalize,
+    combineLatestAll,
+    switchMap,
+    filter,
+    first,
+} from 'rxjs/operators';
 
 import {normalizeError} from '@/lib/normalizeError';
 import {DownloadCache} from '@/main/DownloadCache';
@@ -33,7 +47,15 @@ export class TalonDownloadManager {
         this.redmineApi = new RedmineApi(token, reserveToken);
     }
 
-    async restoreCache(xlsxFileName: string, talonIds: string[]) {
+    public isDownloadFinished(xlsxFileName: string) {
+        const progress = this.cache.get(xlsxFileName)?.getProgress();
+        if (progress === undefined) {
+            return false;
+        }
+        return progress.completed === progress.total;
+    }
+
+    private async restoreCache(xlsxFileName: string, talonIds: string[]) {
         try {
             const folderName = `folder_${xlsxFileName}`;
             const folderPath = path.resolve(this.dowloadPath, folderName);
@@ -75,15 +97,13 @@ export class TalonDownloadManager {
 
     public downloadTalons(talons: string[], xlsxFileName: string, abortSignal: Subject<void>) {
         const concurrency = 8;
-        const createTalonDownloadStream = (talon: string, cache: DownloadCache): Observable<DownloadEvent> =>
-            from(this.downloadTalon(talon, xlsxFileName)).pipe(
-                catchError((error) => {
-                    // Just log the error
-                    console.error(error);
-                    throw error;
-                }),
+        let shouldAbort = false;
+        abortSignal.subscribe(() => {
+            shouldAbort = true;
+        });
+        const createTalonDownloadStream = (talon: string, cache: DownloadCache): Observable<DownloadEvent> => {
+            return from(this.downloadTalon(talon, xlsxFileName)).pipe(
                 retry(3),
-                delay(1000),
                 tap((talonId) => cache.complete(talonId)),
                 map((talonId) => {
                     const progress = cache.getProgress();
@@ -108,13 +128,13 @@ export class TalonDownloadManager {
                         error: errorMessage,
                     } as DownloadEvent);
                 }),
+                delay(1000),
             );
+        };
 
         return from(this.restoreCache(xlsxFileName, talons)).pipe(
             mergeMap((cache) => from(cache.getUncompletedTalons()).pipe(withLatestFrom(of(cache)))),
-            mergeMap(([talon, cache]) => createTalonDownloadStream(talon, cache), concurrency),
-            takeUntil(abortSignal),
-            map((v) => v),
+            mergeMap(([talon, cache]) => (shouldAbort ? EMPTY : createTalonDownloadStream(talon, cache)), concurrency),
         );
     }
 
