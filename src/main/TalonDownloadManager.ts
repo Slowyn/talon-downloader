@@ -1,22 +1,8 @@
 import {promises as fs} from 'node:fs';
 import path from 'node:path';
 
-import {from, Subject, of, Observable, BehaviorSubject, concat, defer, combineLatest, zip, EMPTY} from 'rxjs';
-import {
-    mergeMap,
-    tap,
-    retry,
-    delay,
-    catchError,
-    takeUntil,
-    map,
-    withLatestFrom,
-    finalize,
-    combineLatestAll,
-    switchMap,
-    filter,
-    first,
-} from 'rxjs/operators';
+import {from, Subject, of, Observable, EMPTY} from 'rxjs';
+import {mergeMap, tap, retry, delay, catchError, map, withLatestFrom} from 'rxjs/operators';
 
 import {normalizeError} from '@/lib/normalizeError';
 import {DownloadCache} from '@/main/DownloadCache';
