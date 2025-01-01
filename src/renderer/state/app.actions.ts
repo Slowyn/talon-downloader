@@ -7,15 +7,21 @@ export function createAppActions(get: StoreGetState, set: StoreSetState) {
     return {
         setXlsxFile: async (xlsxFile: File) => {
             const xlsxFileName = xlsxFile.name;
+            set((state) => {
+                state.isXlsxLoading = true;
+            });
             const data = await readSheets(xlsxFile);
 
             const parseResult = talonSheetSchema.safeParse(data);
             if (parseResult.error) {
-                return;
+                return set((state) => {
+                    state.isXlsxLoading = false;
+                });
             }
             const talons = parseResult.data;
             const downloadInfo = await window.electronAPI.getDetailedDownloadInfoFs(xlsxFileName, talons);
             return set((state) => {
+                state.isXlsxLoading = false;
                 state.selectedXlsxFile = xlsxFileName;
                 state.loadedXlsxFiles = new Set(get().loadedXlsxFiles).add(xlsxFileName);
                 state.xlsx[xlsxFileName] = {

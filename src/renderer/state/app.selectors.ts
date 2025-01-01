@@ -1,5 +1,9 @@
 import {AppState} from '@/renderer/state/app.state';
 
+export function getIsXlsxLoading(state: AppState) {
+    return state.isXlsxLoading;
+}
+
 export const DEFAULT_TALONS: AppState['xlsx'][string]['talons'] = [];
 export function getTalonsList(state: AppState) {
     const xlsxFileName = state.selectedXlsxFile;

@@ -1,6 +1,7 @@
 import {FC, useMemo} from 'react';
 
-import {getTalonsList, getTalonsDowloadStatuses} from '@/renderer/state/app.selectors';
+import {Skeleton} from '@/components/ui/skeleton';
+import {getTalonsList, getTalonsDowloadStatuses, getIsXlsxLoading} from '@/renderer/state/app.selectors';
 import {useAppState} from '@/renderer/state/app.state';
 
 import {columns, type DownloadRow} from './columns';
@@ -13,6 +14,7 @@ const getRowStatus = (rowData: DownloadRow) => {
 export const Downloads: FC = () => {
     const talons = useAppState(getTalonsList);
     const talonsStatuses = useAppState(getTalonsDowloadStatuses);
+    const isXlsxLoading = useAppState(getIsXlsxLoading);
     const data = useMemo(
         () =>
             talons.map((talon) => ({
@@ -21,5 +23,13 @@ export const Downloads: FC = () => {
             })),
         [talons, talonsStatuses],
     );
+    if (isXlsxLoading) {
+        return (
+            <div className="flex flex-col space-y-3">
+                <Skeleton className="rounded-md border h-10" />
+                <Skeleton className="rounded-md border h-[300px]" />
+            </div>
+        );
+    }
     return <DataTable columns={columns} data={data} getRowStatus={getRowStatus} />;
 };

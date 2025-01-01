@@ -4,6 +4,7 @@ import {TalonSheetSchema} from '@/shared/TalonSchema';
 import {DownloadStatus} from '@/shared/Download';
 
 export type AppState = {
+    isXlsxLoading: boolean;
     selectedXlsxFile: string | undefined;
     loadedXlsxFiles: Set<string>;
     xlsx: {
@@ -25,6 +26,7 @@ export type AppState = {
 };
 
 export const defaultState: AppState = {
+    isXlsxLoading: false,
     selectedXlsxFile: undefined,
     loadedXlsxFiles: new Set(),
     xlsx: {},
