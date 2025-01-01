@@ -35,7 +35,7 @@ export const App = () => {
         <div className={cn('grid grid-cols-6 gap-4 h-full')}>
             <div className="col-span-2">
                 <Input id="sheets" type="file" onChange={onFileChange} accept=".xlsx, .csv" />
-                {xlsxFile && <DownloadTalons />}
+                {xlsxFile && <ControlPanel />}
             </div>
             <div className="col-span-4 h-full overflow-hidden">
                 <ScrollArea className="h-full">
@@ -46,7 +46,7 @@ export const App = () => {
     );
 };
 
-const DownloadTalons: FC = () => {
+const ControlPanel: FC = () => {
     const downloadStatus = useAppState(getCurrentDownloadStatus);
     const progress = useAppState(getTalonsDownloadProgress);
     const xlsxFileName = useAppState(getSelectedXlsxFile);
@@ -54,26 +54,25 @@ const DownloadTalons: FC = () => {
     const actions = useMemo(() => createAppActions(useAppState.getState, useAppState.setState), []);
 
     useEffect(() => {
-        window.electronAPI.onDownloadTalonStart((downloadInfo) => {
+        return window.electronAPI.onDownloadTalonStart((downloadInfo) => {
             actions.updateDownloadStatus(downloadInfo, {status: 'InProgress'});
         });
     }, [actions]);
 
     useEffect(() => {
-        // TODO: Implement unsubscribe!
-        window.electronAPI.onDownloadTalonProgress((downloadInfo: TalonDownloadProgressInfo) => {
+        return window.electronAPI.onDownloadTalonProgress((downloadInfo: TalonDownloadProgressInfo) => {
             actions.updateDownloadStatus(downloadInfo, {status: 'Completed'});
         });
     }, [actions]);
 
     useEffect(() => {
-        window.electronAPI.onDownloadTalonError((downloadInfo: TalonDownloadProgressInfo, error: string) => {
+        return window.electronAPI.onDownloadTalonError((downloadInfo: TalonDownloadProgressInfo, error: string) => {
             actions.updateDownloadStatus(downloadInfo, {status: 'Failed', error});
         });
     }, [actions]);
 
     useEffect(() => {
-        window.electronAPI.onDownloadTalonsComplete(() => {
+        return window.electronAPI.onDownloadTalonsComplete(() => {
             actions.completeDownloadingTalons();
         });
     }, [actions]);

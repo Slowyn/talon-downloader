@@ -1,6 +1,6 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
-import {contextBridge, ipcRenderer} from 'electron';
+import {contextBridge, ipcRenderer, IpcRendererEvent} from 'electron';
 
 import {TalonSheetSchema} from '@/shared/TalonSchema';
 import {TalonDownloadProgressInfo, DetailedDownloadInfo} from '@/shared/Download';
@@ -16,16 +16,19 @@ import {
     getDetailedDownloadInfoFs,
 } from '@/shared/events';
 
+type UnsubscribeFn = () => void;
 declare global {
     interface Window {
         electronAPI: {
             downloadTalons: (talons: TalonSheetSchema, xlsxFileName: string) => void;
             abortDownloadTalons: () => void;
-            onDownloadAllTalonsStart: (callback: () => void) => void;
-            onDownloadTalonStart: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) => void;
-            onDownloadTalonProgress: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) => void;
-            onDownloadTalonError: (callback: (downloadInfo: TalonDownloadProgressInfo, error: string) => void) => void;
-            onDownloadTalonsComplete: (callback: () => void) => void;
+            onDownloadAllTalonsStart: (callback: () => void) => UnsubscribeFn;
+            onDownloadTalonStart: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) => UnsubscribeFn;
+            onDownloadTalonProgress: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) => UnsubscribeFn;
+            onDownloadTalonError: (
+                callback: (downloadInfo: TalonDownloadProgressInfo, error: string) => void,
+            ) => UnsubscribeFn;
+            onDownloadTalonsComplete: (callback: () => void) => UnsubscribeFn;
             getDetailedDownloadInfo: (xlsxFileName: string) => Promise<DetailedDownloadInfo>;
             getDetailedDownloadInfoFs: (
                 xlsxFileName: string,
@@ -35,27 +38,46 @@ declare global {
     }
 }
 
+function createIpcRenderedSubscription<E extends string, T extends (event: IpcRendererEvent, ...args: any[]) => void>(
+    event: E,
+    listener: T,
+) {
+    ipcRenderer.on(event, listener);
+    return () => {
+        ipcRenderer.off(event, listener);
+    };
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
-    downloadTalons: (talons: TalonSheetSchema, xlsxFileName: string) =>
-        ipcRenderer.send(downloadTalons, talons, xlsxFileName),
-    abortDownloadTalons: () => ipcRenderer.send(abortDownloadTalons),
-    onDownloadAllTalonsStart: (callback: () => void) => ipcRenderer.on(downloadAllTalonsStart, callback),
-    onDownloadTalonStart: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) =>
-        ipcRenderer.on(downloadTalonStart, (event, downloadInfo) => {
+    downloadTalons: (talons: TalonSheetSchema, xlsxFileName: string) => {
+        return ipcRenderer.send(downloadTalons, talons, xlsxFileName);
+    },
+    abortDownloadTalons: () => {
+        return ipcRenderer.send(abortDownloadTalons);
+    },
+    onDownloadAllTalonsStart: (callback: () => void) => {
+        return createIpcRenderedSubscription(downloadAllTalonsStart, callback);
+    },
+    onDownloadTalonStart: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) => {
+        return createIpcRenderedSubscription(downloadTalonStart, (event, downloadInfo) => {
             callback(downloadInfo);
-        }),
-    onDownloadTalonProgress: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) =>
-        ipcRenderer.on(downloadTalonsProgress, (event, downloadInfo) => {
+        });
+    },
+    onDownloadTalonProgress: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) => {
+        return createIpcRenderedSubscription(downloadTalonsProgress, (event, downloadInfo) => {
             callback(downloadInfo);
-        }),
-    onDownloadTalonError: (callback: (downloadInfo: TalonDownloadProgressInfo, error: Error) => void) =>
-        ipcRenderer.on(downloadTalonsError, (event, downloadInfo, error) => {
+        });
+    },
+    onDownloadTalonError: (callback: (downloadInfo: TalonDownloadProgressInfo, error: Error) => void) => {
+        return createIpcRenderedSubscription(downloadTalonsError, (event, downloadInfo, error) => {
             callback(downloadInfo, error);
-        }),
-    onDownloadTalonsComplete: (callback: () => void) =>
-        ipcRenderer.on(downloadTalonsComplete, (event) => {
+        });
+    },
+    onDownloadTalonsComplete: (callback: () => void) => {
+        return createIpcRenderedSubscription(downloadTalonsComplete, (event) => {
             callback();
-        }),
+        });
+    },
 
     getDetailedDownloadInfo: (xlsxFileName: string): Promise<DetailedDownloadInfo> => {
         return ipcRenderer.invoke(getDetailedDownloadInfo, xlsxFileName);
