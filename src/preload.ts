@@ -38,6 +38,7 @@ declare global {
     }
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: <Usage in generics is allowed>
 function createIpcRenderedSubscription<E extends string, T extends (event: IpcRendererEvent, ...args: any[]) => void>(
     event: E,
     listener: T,
