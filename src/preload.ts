@@ -7,7 +7,8 @@ import {TalonDownloadProgressInfo, DetailedDownloadInfo} from '@/shared/Download
 import {
     downloadTalons,
     abortDownloadTalons,
-    downloadTalonsStart,
+    downloadAllTalonsStart,
+    downloadTalonStart,
     downloadTalonsComplete,
     downloadTalonsProgress,
     downloadTalonsError,
@@ -20,7 +21,8 @@ declare global {
         electronAPI: {
             downloadTalons: (talons: TalonSheetSchema, xlsxFileName: string) => void;
             abortDownloadTalons: () => void;
-            onDownloadTalonsStart: (callback: () => void) => void;
+            onDownloadAllTalonsStart: (callback: () => void) => void;
+            onDownloadTalonStart: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) => void;
             onDownloadTalonProgress: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) => void;
             onDownloadTalonError: (callback: (downloadInfo: TalonDownloadProgressInfo, error: string) => void) => void;
             onDownloadTalonsComplete: (callback: () => void) => void;
@@ -37,7 +39,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     downloadTalons: (talons: TalonSheetSchema, xlsxFileName: string) =>
         ipcRenderer.send(downloadTalons, talons, xlsxFileName),
     abortDownloadTalons: () => ipcRenderer.send(abortDownloadTalons),
-    onDownloadTalonsStart: (callback: () => void) => ipcRenderer.on(downloadTalonsStart, callback),
+    onDownloadAllTalonsStart: (callback: () => void) => ipcRenderer.on(downloadAllTalonsStart, callback),
+    onDownloadTalonStart: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) =>
+        ipcRenderer.on(downloadTalonStart, (event, downloadInfo) => {
+            callback(downloadInfo);
+        }),
     onDownloadTalonProgress: (callback: (downloadInfo: TalonDownloadProgressInfo) => void) =>
         ipcRenderer.on(downloadTalonsProgress, (event, downloadInfo) => {
             callback(downloadInfo);

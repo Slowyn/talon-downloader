@@ -10,7 +10,8 @@ import {
     downloadTalonsComplete,
     downloadTalonsError,
     downloadTalonsProgress,
-    downloadTalonsStart,
+    downloadAllTalonsStart,
+    downloadTalonStart,
     getDetailedDownloadInfo,
     getDetailedDownloadInfoFs,
 } from '@/shared/events';
@@ -68,10 +69,10 @@ const createWindow = async () => {
         };
         const downloadStream = talonDownloadManager.downloadTalons(talonIds, xlsxFileName, abortSignal);
         ipcMain.once(abortDownloadTalons, handleAbort);
-        mainWindow.webContents.send(downloadTalonsStart);
+        mainWindow.webContents.send(downloadAllTalonsStart);
         downloadStream.subscribe({
             next: (event) => {
-                if (event.event === downloadTalonsProgress) {
+                if (event.event === downloadTalonsProgress || event.event === downloadTalonStart) {
                     mainWindow.webContents.send(event.event, event.downloadInfo);
                 } else if (event.event === downloadTalonsError) {
                     mainWindow.webContents.send(event.event, event.downloadInfo, event.error);

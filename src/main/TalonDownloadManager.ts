@@ -1,17 +1,21 @@
 import {promises as fs} from 'node:fs';
 import path from 'node:path';
 
-import {from, Subject, of, Observable, EMPTY} from 'rxjs';
+import {from, Subject, of, Observable, EMPTY, merge} from 'rxjs';
 import {mergeMap, tap, retry, delay, catchError, map, withLatestFrom} from 'rxjs/operators';
 
 import {normalizeError} from '@/lib/normalizeError';
 import {DownloadCache} from '@/main/DownloadCache';
 import {TalonDownloadProgressInfo, downloadProgressInfo} from '@/shared/Download';
-import {downloadTalonsError, downloadTalonsProgress} from '@/shared/events';
+import {downloadTalonsError, downloadTalonsProgress, downloadTalonStart} from '@/shared/events';
 import {RedmineApi} from '@/main/RedmineApi';
 import {makeFileName, makeFolderName, getTalonIdFromFileName, testTalonFileFormat} from '@/main/outputFile';
 
 type DownloadEvent =
+    | {
+          event: typeof downloadTalonStart;
+          downloadInfo: TalonDownloadProgressInfo;
+      }
     | {
           event: typeof downloadTalonsProgress;
           downloadInfo: TalonDownloadProgressInfo;
@@ -83,7 +87,14 @@ export class TalonDownloadManager {
             shouldAbort = true;
         });
         const createTalonDownloadStream = (talon: string, cache: DownloadCache): Observable<DownloadEvent> => {
-            return from(this.downloadTalon(talon, xlsxFileName)).pipe(
+            const progress = cache.getProgress();
+            const startDownloadEvent = of({
+                event: downloadTalonStart,
+                downloadInfo: downloadProgressInfo(progress.completed, progress.failed, progress.total, {
+                    talonId: talon,
+                }),
+            } as DownloadEvent);
+            const downloadStream = from(this.downloadTalon(talon, xlsxFileName)).pipe(
                 retry(3),
                 tap((talonId) => cache.complete(talonId)),
                 map((talonId) => {
@@ -111,6 +122,7 @@ export class TalonDownloadManager {
                 }),
                 delay(1000),
             );
+            return merge(startDownloadEvent, downloadStream);
         };
 
         return from(this.restoreCache(xlsxFileName, talons)).pipe(

@@ -54,15 +54,21 @@ const DownloadTalons: FC = () => {
     const actions = useMemo(() => createAppActions(useAppState.getState, useAppState.setState), []);
 
     useEffect(() => {
+        window.electronAPI.onDownloadTalonStart((downloadInfo) => {
+            actions.updateDownloadStatus(downloadInfo, {status: 'InProgress'});
+        });
+    }, [actions]);
+
+    useEffect(() => {
         // TODO: Implement unsubscribe!
         window.electronAPI.onDownloadTalonProgress((downloadInfo: TalonDownloadProgressInfo) => {
-            actions.updateDownloadStatus(downloadInfo.item.talonId, {status: 'Completed'});
+            actions.updateDownloadStatus(downloadInfo, {status: 'Completed'});
         });
     }, [actions]);
 
     useEffect(() => {
         window.electronAPI.onDownloadTalonError((downloadInfo: TalonDownloadProgressInfo, error: string) => {
-            actions.updateDownloadStatus(downloadInfo.item.talonId, {status: 'Failed', error});
+            actions.updateDownloadStatus(downloadInfo, {status: 'Failed', error});
         });
     }, [actions]);
 

@@ -1,6 +1,6 @@
 import type {StoreGetState, StoreSetState} from '@/renderer/state/app.state';
 import {talonSheetSchema} from '@/shared/TalonSchema';
-import {DownloadStatus} from '@/shared/Download';
+import {DownloadStatus, TalonDownloadProgressInfo} from '@/shared/Download';
 import {readSheets} from '../lib/readSheets';
 
 export function createAppActions(get: StoreGetState, set: StoreSetState) {
@@ -69,19 +69,18 @@ export function createAppActions(get: StoreGetState, set: StoreSetState) {
                 state.xlsx[selectedXlsxFile].status = 'Completed';
             });
         },
-        updateDownloadStatus: (talonId: string, status: DownloadStatus) => {
+        updateDownloadStatus: (downloadInfo: TalonDownloadProgressInfo, status: DownloadStatus) => {
             set((state) => {
+                const {talonId} = downloadInfo.item;
                 const selectedXlsxFile = state.selectedXlsxFile;
                 if (!selectedXlsxFile) {
                     return;
                 }
                 const downloadState = state.downloadState[selectedXlsxFile];
-                if (status.status === 'Failed') {
-                    downloadState.failed++;
-                } else if (status.status === 'Completed') {
-                    downloadState.completed++;
-                }
                 downloadState.statuses[talonId] = status;
+                downloadState.total = downloadInfo.total;
+                downloadState.completed = downloadInfo.completed;
+                downloadState.failed = downloadInfo.failed;
             });
         },
     };

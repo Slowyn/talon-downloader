@@ -7,13 +7,7 @@ import {columns, type DownloadRow} from './columns';
 import {DataTable} from './data-table';
 
 const getRowStatus = (rowData: DownloadRow) => {
-    if (rowData.status === 'Completed') {
-        return 'Completed';
-    }
-    if (rowData.status === 'Failed') {
-        return 'Failed';
-    }
-    return 'Pending';
+    return rowData.status;
 };
 
 export const Downloads: FC = () => {

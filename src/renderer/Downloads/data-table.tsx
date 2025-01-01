@@ -2,13 +2,12 @@ import {ColumnDef, flexRender, getCoreRowModel, useReactTable} from '@tanstack/r
 
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import {cn} from '@/lib/utils';
-
-type RowStatus = 'Pending' | 'Completed' | 'Failed';
+import {DownloadStatus} from '@/shared/Download';
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
-    getRowStatus: (data: TData) => RowStatus;
+    getRowStatus: (data: TData) => DownloadStatus['status'];
 }
 
 export function DataTable<TData, TValue>({columns, data, getRowStatus}: DataTableProps<TData, TValue>) {
@@ -43,6 +42,7 @@ export function DataTable<TData, TValue>({columns, data, getRowStatus}: DataTabl
                                 key={row.id}
                                 data-state={row.getIsSelected() && 'selected'}
                                 className={cn({
+                                    'bg-yellow-100': getRowStatus(row.original) === 'InProgress',
                                     'bg-green-100': getRowStatus(row.original) === 'Completed',
                                     'bg-red-200': getRowStatus(row.original) === 'Failed',
                                 })}

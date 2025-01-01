@@ -47,6 +47,9 @@ export class DownloadCache implements IDownloadCache {
             if (this.isCompleted(talonId)) {
                 return;
             }
+            if (this.isFailed(talonId)) {
+                this.failed--;
+            }
             this.statuses[talonId] = {
                 status: 'Completed',
             };
