@@ -84,9 +84,11 @@ export function createAppActions(get: StoreGetState, set: StoreSetState) {
                 }
                 const downloadState = state.downloadState[selectedXlsxFile];
                 downloadState.statuses[talonId] = status;
-                downloadState.total = downloadInfo.total;
-                downloadState.completed = downloadInfo.completed;
-                downloadState.failed = downloadInfo.failed;
+                if (status.status !== 'InProgress') {
+                    downloadState.total = downloadInfo.total;
+                    downloadState.completed = downloadInfo.completed;
+                    downloadState.failed = downloadInfo.failed;
+                }
             });
         },
     };
