@@ -42,11 +42,11 @@ export class TalonDownloadManager {
     }
 
     private async restoreCache(xlsxFileName: string, talonIds: string[]) {
+        const cache = new DownloadCache(xlsxFileName, talonIds);
         try {
             const folderName = `folder_${xlsxFileName}`;
             const folderPath = path.resolve(this.dowloadPath, folderName);
             const files = await fs.readdir(folderPath);
-            const cache = new DownloadCache(xlsxFileName, talonIds);
             for (const file of files) {
                 const isTalonFile = testTalonFileFormat(file);
                 if (!isTalonFile) {
@@ -55,15 +55,10 @@ export class TalonDownloadManager {
                 const talonId = getTalonIdFromFileName(file);
                 cache.complete(talonId);
             }
-            this.cache.set(xlsxFileName, cache);
         } catch (error) {
             console.error(error);
-            this.cache.set(xlsxFileName, new DownloadCache(xlsxFileName, talonIds));
         }
-        const cache = this.cache.get(xlsxFileName);
-        if (cache === undefined) {
-            throw new Error('Failed to restore cache');
-        }
+        this.cache.set(xlsxFileName, cache);
         return cache;
     }
 

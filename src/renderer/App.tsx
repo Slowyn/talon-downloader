@@ -1,19 +1,22 @@
 import {FC, useCallback, useEffect, useMemo} from 'react';
 
-import {Input} from '@/components/ui/input';
 import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
 import {Progress} from '@/components/ui/progress';
+import {ScrollArea} from '@/components/ui/scroll-area';
 import {TalonDownloadProgressInfo} from '@/shared/Download';
 
-import {useAppState} from '@/renderer/state/app.state';
+import {cn} from '@/lib/utils';
 import {createAppActions} from '@/renderer/state/app.actions';
 import {
-    getTalonsDownloadProgress,
     getCurrentDownloadStatus,
-    getSelectedXlsxFile,
-    getTalonsDowloadStatuses,
     getDownloadPercent,
+    getSelectedXlsxFile,
+    getTalonsDownloadProgress,
 } from '@/renderer/state/app.selectors';
+import {useAppState} from '@/renderer/state/app.state';
+
+import {Downloads} from '@/renderer/Downloads/Downloads';
 
 export const App = () => {
     const xlsxFile = useAppState(getSelectedXlsxFile);
@@ -29,9 +32,16 @@ export const App = () => {
     );
 
     return (
-        <div>
-            <Input id="sheets" type="file" onChange={onFileChange} accept=".xlsx, .csv" />
-            {xlsxFile && <DownloadTalons />}
+        <div className={cn('grid grid-cols-6 gap-4 h-full')}>
+            <div className="col-span-2">
+                <Input id="sheets" type="file" onChange={onFileChange} accept=".xlsx, .csv" />
+                {xlsxFile && <DownloadTalons />}
+            </div>
+            <div className="col-span-4 h-full overflow-hidden">
+                <ScrollArea className="h-full">
+                    <Downloads />
+                </ScrollArea>
+            </div>
         </div>
     );
 };
@@ -40,7 +50,6 @@ const DownloadTalons: FC = () => {
     const downloadStatus = useAppState(getCurrentDownloadStatus);
     const progress = useAppState(getTalonsDownloadProgress);
     const xlsxFileName = useAppState(getSelectedXlsxFile);
-    const talonsStatuses = useAppState(getTalonsDowloadStatuses);
     const progressValue = useAppState(getDownloadPercent);
     const actions = useMemo(() => createAppActions(useAppState.getState, useAppState.setState), []);
 

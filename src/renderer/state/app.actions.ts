@@ -1,12 +1,9 @@
-import {StoreApi} from 'zustand';
-import {AppState} from '@/renderer/state/app.state';
+import type {StoreGetState, StoreSetState} from '@/renderer/state/app.state';
 import {talonSheetSchema} from '@/shared/TalonSchema';
 import {DownloadStatus} from '@/shared/Download';
 import {readSheets} from '../lib/readSheets';
 
-type AppStore = StoreApi<AppState>;
-
-export function createAppActions(get: AppStore['getState'], set: AppStore['setState']) {
+export function createAppActions(get: StoreGetState, set: StoreSetState) {
     return {
         setXlsxFile: async (xlsxFile: File) => {
             const xlsxFileName = xlsxFile.name;
@@ -18,25 +15,19 @@ export function createAppActions(get: AppStore['getState'], set: AppStore['setSt
             }
             const talons = parseResult.data;
             const downloadInfo = await window.electronAPI.getDetailedDownloadInfoFs(xlsxFileName, talons);
-            return set({
-                selectedXlsxFile: xlsxFileName,
-                loadedXlsxFiles: new Set(get().loadedXlsxFiles).add(xlsxFileName),
-                xlsx: {
-                    ...get().xlsx,
-                    [xlsxFileName]: {
-                        talons,
-                        status: 'NotStarted',
-                    },
-                },
-                downloadState: {
-                    ...get().downloadState,
-                    [xlsxFileName]: downloadInfo,
-                },
+            return set((state) => {
+                state.selectedXlsxFile = xlsxFileName;
+                state.loadedXlsxFiles = new Set(get().loadedXlsxFiles).add(xlsxFileName);
+                state.xlsx[xlsxFileName] = {
+                    talons,
+                    status: 'NotStarted',
+                };
+                state.downloadState[xlsxFileName] = downloadInfo;
             });
         },
         setSelectedXlsxFile: (xlsxFileName: string) => {
-            return set({
-                selectedXlsxFile: xlsxFileName,
+            return set((state) => {
+                state.selectedXlsxFile = xlsxFileName;
             });
         },
         startDownloadingTalons: async () => {
@@ -45,14 +36,8 @@ export function createAppActions(get: AppStore['getState'], set: AppStore['setSt
                 return;
             }
             window.electronAPI.downloadTalons(get().xlsx[selectedXlsxFile].talons, selectedXlsxFile);
-            return set({
-                xlsx: {
-                    ...get().xlsx,
-                    [selectedXlsxFile]: {
-                        ...get().xlsx[selectedXlsxFile],
-                        status: 'InProgress',
-                    },
-                },
+            return set((state) => {
+                state.xlsx[selectedXlsxFile].status = 'InProgress';
             });
         },
         stopDownloadingTalons: async () => {
@@ -61,14 +46,8 @@ export function createAppActions(get: AppStore['getState'], set: AppStore['setSt
                 return;
             }
             window.electronAPI.abortDownloadTalons();
-            return set({
-                xlsx: {
-                    ...get().xlsx,
-                    [selectedXlsxFile]: {
-                        ...get().xlsx[selectedXlsxFile],
-                        status: 'Stopped',
-                    },
-                },
+            return set((state) => {
+                state.xlsx[selectedXlsxFile].status = 'Stopped';
             });
         },
         resumeDownloadingTalons: async () => {
@@ -77,14 +56,8 @@ export function createAppActions(get: AppStore['getState'], set: AppStore['setSt
                 return;
             }
             window.electronAPI.downloadTalons(get().xlsx[selectedXlsxFile].talons, selectedXlsxFile);
-            return set({
-                xlsx: {
-                    ...get().xlsx,
-                    [selectedXlsxFile]: {
-                        ...get().xlsx[selectedXlsxFile],
-                        status: 'InProgress',
-                    },
-                },
+            return set((state) => {
+                state.xlsx[selectedXlsxFile].status = 'InProgress';
             });
         },
         completeDownloadingTalons: () => {
@@ -92,36 +65,23 @@ export function createAppActions(get: AppStore['getState'], set: AppStore['setSt
             if (!selectedXlsxFile) {
                 return;
             }
-            return set({
-                xlsx: {
-                    ...get().xlsx,
-                    [selectedXlsxFile]: {
-                        ...get().xlsx[selectedXlsxFile],
-                        status: 'Completed',
-                    },
-                },
+            return set((state) => {
+                state.xlsx[selectedXlsxFile].status = 'Completed';
             });
         },
         updateDownloadStatus: (talonId: string, status: DownloadStatus) => {
-            const selectedXlsxFile = get().selectedXlsxFile;
-            if (!selectedXlsxFile) {
-                return;
-            }
-            const downloadState = get().downloadState[selectedXlsxFile];
-            if (status.status === 'Failed') {
-                downloadState.failed++;
-            } else if (status.status === 'Completed') {
-                downloadState.completed++;
-            }
-            downloadState.statuses = {
-                ...downloadState.statuses,
-                [talonId]: status,
-            };
-            return set({
-                downloadState: {
-                    ...get().downloadState,
-                    [selectedXlsxFile]: downloadState,
-                },
+            set((state) => {
+                const selectedXlsxFile = state.selectedXlsxFile;
+                if (!selectedXlsxFile) {
+                    return;
+                }
+                const downloadState = state.downloadState[selectedXlsxFile];
+                if (status.status === 'Failed') {
+                    downloadState.failed++;
+                } else if (status.status === 'Completed') {
+                    downloadState.completed++;
+                }
+                downloadState.statuses[talonId] = status;
             });
         },
     };

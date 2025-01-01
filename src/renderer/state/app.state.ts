@@ -1,14 +1,7 @@
 import {create} from 'zustand';
+import {immer} from 'zustand/middleware/immer';
 import {TalonSheetSchema} from '@/shared/TalonSchema';
-
-type DownloadStatus =
-    | {
-          status: 'NotStarted' | 'InProgress' | 'Completed';
-      }
-    | {
-          status: 'Failed';
-          error: string;
-      };
+import {DownloadStatus} from '@/shared/Download';
 
 export type AppState = {
     selectedXlsxFile: string | undefined;
@@ -38,4 +31,8 @@ export const defaultState: AppState = {
     downloadState: {},
 };
 
-export const useAppState = create<AppState>(() => defaultState);
+export const useAppState = create<AppState>()(immer(() => defaultState));
+
+export type StoreApi = typeof useAppState;
+export type StoreSetState = StoreApi['setState'];
+export type StoreGetState = StoreApi['getState'];

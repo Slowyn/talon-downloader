@@ -1,21 +1,32 @@
 import {AppState} from '@/renderer/state/app.state';
 
+export const DEFAULT_TALONS: AppState['xlsx'][string]['talons'] = [];
+export function getTalonsList(state: AppState) {
+    const xlsxFileName = state.selectedXlsxFile;
+    if (!xlsxFileName) {
+        return DEFAULT_TALONS;
+    }
+    return state.xlsx[xlsxFileName].talons;
+}
+
+const DEFAULT_STATUS: AppState['downloadState'][string]['statuses'] = {};
 export function getTalonsDowloadStatuses(state: AppState) {
     const xlsxFileName = state.selectedXlsxFile;
     if (!xlsxFileName) {
-        return {};
+        return DEFAULT_STATUS;
     }
     return state.downloadState[xlsxFileName].statuses;
 }
 
+const DEFAULT_PROGRESS = {
+    total: 0,
+    completed: 0,
+    failed: 0,
+};
 export function getTalonsDownloadProgress(state: AppState) {
     const xlsxFileName = state.selectedXlsxFile;
     if (!xlsxFileName) {
-        return {
-            total: 0,
-            completed: 0,
-            failed: 0,
-        };
+        return DEFAULT_PROGRESS;
     }
     return state.downloadState[xlsxFileName];
 }
