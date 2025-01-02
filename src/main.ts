@@ -1,4 +1,5 @@
 import {app, BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent} from 'electron';
+import log from 'electron-log/main';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import {Subject} from 'rxjs';
@@ -15,6 +16,9 @@ import {
     getDetailedDownloadInfo,
     getDetailedDownloadInfoFs,
 } from '@/shared/events';
+
+// Initialize logger
+log.initialize();
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
