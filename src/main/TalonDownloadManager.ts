@@ -2,7 +2,7 @@ import {promises as fs} from 'node:fs';
 import path from 'node:path';
 import log from 'electron-log/main';
 
-import {from, Subject, of, Observable, EMPTY, merge} from 'rxjs';
+import {from, Subject, of, Observable, EMPTY, merge, defer} from 'rxjs';
 import {mergeMap, tap, retry, delay, catchError, map, withLatestFrom} from 'rxjs/operators';
 
 import {normalizeError} from '@/lib/normalizeError';
@@ -95,7 +95,7 @@ export class TalonDownloadManager {
                     talonId: talon,
                 }),
             } as DownloadEvent);
-            const downloadStream = from(this.downloadTalon(talon, xlsxFileName)).pipe(
+            const downloadStream = defer(() => this.downloadTalon(talon, xlsxFileName)).pipe(
                 catchError((error) => {
                     log.error(error);
                     throw error;
